@@ -2,6 +2,9 @@ from django.shortcuts import render
 from rest_framework.viewsets import ModelViewSet
 from .models import *
 from .serializers import *
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
 
 class UsuarioCustomizadoView(ModelViewSet):
     queryset = UsuarioCustomizado.objects.all()
@@ -14,6 +17,15 @@ class GuardaView(ModelViewSet):
 class UsuarioGuardaView(ModelViewSet):
     queryset = UsuarioGuarda.objects.all()
     serializer_class = UsuarioGuardaSerializer
+
+@api_view(['POST'])
+def upload_foto(request):
+    if request.method == 'POST':
+        serializer = UsuarioCustomizadoSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
 
 class TrocaView(ModelViewSet):
     queryset = Troca.objects.all()

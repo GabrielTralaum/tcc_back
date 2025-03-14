@@ -9,7 +9,7 @@ SEXO_CHOICES = [('M', 'Masculino'), ('F', 'Feminino')]
 TIPO_CHOICES = [('SB', 'Subtenente'), ('A', 'Atirador'), ('S', 'Sargento'), ('C', 'Cabo')]
 class UsuarioCustomizado(AbstractBaseUser, PermissionsMixin):
     numero_atirador = models.IntegerField(unique=True, null=True, blank=True)
-    foto = models.ImageField(upload_to="cars")
+    foto = models.ImageField(upload_to='imagens/%Y/%m/%d/')
     nome_completo = models.CharField(max_length=150)
     nome_guerra = models.CharField(max_length=50)
     patente = models.CharField(max_length=2, choices=TIPO_CHOICES)

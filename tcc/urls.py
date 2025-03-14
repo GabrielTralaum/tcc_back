@@ -1,6 +1,7 @@
 from .views import *
 from rest_framework.routers import DefaultRouter
 
+
 router = DefaultRouter()
 router.register(r'usuario', UsuarioCustomizadoView)
 router.register(r'Guarda', GuardaView)

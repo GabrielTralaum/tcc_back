@@ -16,10 +16,21 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.views.static import serve
+from django.conf.urls.static import static
+from tcc import views
+
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('',include('tcc.urls')),
     path('', include('djoser.urls')),
     path('auth/', include('djoser.urls.jwt')),
+    path('api/upload-foto/', views.upload_foto, name='upload_foto'),
 ]
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+    
