@@ -1,18 +1,21 @@
-from django.db import models
+from django.db import models 
 
 # Create your models here.
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from .gerenciador import Gerenciador
 
+ROLE_CHOICES = [('user', 'Usuário'),('admin', 'Administrador'),]
 SEXO_CHOICES = [('M', 'Masculino'), ('F', 'Feminino')]
 TIPO_CHOICES = [('SB', 'Subtenente'), ('A', 'Atirador'), ('S', 'Sargento'), ('C', 'Cabo')]
+TIPS_CHOICES = [('S', 'Sim'), ('N', 'Não')]
 class UsuarioCustomizado(AbstractBaseUser, PermissionsMixin):
     numero_atirador = models.IntegerField(unique=True, null=True, blank=True)
     foto = models.ImageField(upload_to='imagens/%Y/%m/%d/')
     nome_completo = models.CharField(max_length=150)
     nome_guerra = models.CharField(max_length=50)
     patente = models.CharField(max_length=2, choices=TIPO_CHOICES)
+    comandante = models.CharField(max_length=2, choices=TIPS_CHOICES)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     data_nascimento = models.DateField()
@@ -30,9 +33,10 @@ class UsuarioCustomizado(AbstractBaseUser, PermissionsMixin):
     bairro = models.CharField(max_length=100)
     cidade = models.CharField(max_length=100)
     numero_casa = models.CharField(max_length=10)
-    complemento = models.CharField(max_length=50)
+    complemento = models.CharField(max_length=50, null=True, blank=True)
     cep = models.CharField(max_length=8)
     id_turma = models.IntegerField(null=True, blank=True)
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='user')
     
     objects = Gerenciador()
 
@@ -104,3 +108,5 @@ class Escala(models.Model):
 
     def __str__(self):
         return f"Escala {self.id} - {self.escala_horario.strftime('%H:%M')}"
+    
+

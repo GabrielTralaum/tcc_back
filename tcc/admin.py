@@ -22,10 +22,10 @@ class UsuarioCustomizadoAdmin(UserAdmin):
             'fields': ('email', 'nome_completo', 'cpf', 'data_nascimento', 'sexo', 'rua', 'bairro', 'cidade', 'numero_casa', 'complemento', 'cep','foto')
         }),
         (("Informações Militares"), {
-            'fields': ('numero_atirador','nome_guerra', 'trabalho', 'escolaridade', 'ra', 'mae', 'pai', 'tipo_sanguineo', 'patente')
+            'fields': ('numero_atirador','nome_guerra', 'trabalho', 'escolaridade', 'ra', 'mae', 'pai', 'tipo_sanguineo', 'patente', 'comandante')
         }),
         (("Permissões"), {
-            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups')
+            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'role')
         }),
         (("Senha e autenticação"), {
             'fields': ('password',)  # Adicionado para permitir alteração de senha
@@ -35,7 +35,7 @@ class UsuarioCustomizadoAdmin(UserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'nome_completo', 'cpf', 'data_nascimento', 'sexo', 'password1', 'password2', 'is_active', 'is_staff'),
+            'fields': ('email', 'nome_completo', 'cpf', 'data_nascimento', 'sexo', 'password1', 'password2', 'is_active', 'is_staff', 'role'),
         }),
     )
 
