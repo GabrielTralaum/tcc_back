@@ -47,9 +47,7 @@ class UsuarioCustomizado(AbstractBaseUser, PermissionsMixin):
         return str(self.numero_atirador) if self.numero_atirador is not None else self.email
 
 class Guarda(models.Model):
-    data_inicio = models.DateTimeField()
-    data_fim = models.DateTimeField()
-    data_guarda = models.DateTimeField(auto_now_add=True)
+    data_guarda = models.DateTimeField(auto_now_add=True) #ver/pensar ainda
     observacoes = models.CharField(max_length=250)
     id_escala = models.ForeignKey('Escala', on_delete=models.CASCADE)
     
@@ -58,10 +56,12 @@ class Guarda(models.Model):
 
 class UsuarioGuarda(models.Model):
     id_guarda = models.ForeignKey(Guarda, on_delete=models.CASCADE)
-    numero_atirador = models.ForeignKey(UsuarioCustomizado, to_field='numero_atirador', on_delete=models.CASCADE, null=False)
-    
+    numero_atirador = models.ForeignKey(UsuarioCustomizado, on_delete=models.CASCADE, to_field='numero_atirador', null=False)
+    comandante = models.BooleanField(default=False)
+
+
     def __str__(self):
-        return f"{self.numero_atirador} na Guarda {self.id_guarda}"
+       return f"{self.numero_atirador} na Guarda {self.id_guarda}"
 
 class Troca(models.Model):
     STATUS_CHOICES = [('Pendente', 'Pendente'), ('Aprovada', 'Aprovada'), ('Rejeitada', 'Rejeitada')]
@@ -104,9 +104,10 @@ class Notificacao(models.Model):
         return f"Notificação para {self.numero_atirador} - {self.status}"
     
 class Escala(models.Model):
-    escala_horario = models.TimeField()
+    nome_escala = models.CharField(max_length=100)
 
     def __str__(self):
-        return f"Escala {self.id} - {self.escala_horario.strftime('%H:%M')}"
+        return self.nome_escala
+
     
 

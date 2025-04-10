@@ -39,4 +39,4 @@ class NotificacaoSerializer(serializers.ModelSerializer):
 class EscalaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Escala
-        fields = '__all__'
+        fields = '__all__'     

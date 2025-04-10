@@ -46,3 +46,5 @@ class NotificacaoView(ModelViewSet):
 class EscalaView(ModelViewSet):
     queryset = Escala.objects.all()
     serializer_class = EscalaSerializer
+
+

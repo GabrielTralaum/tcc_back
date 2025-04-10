@@ -12,4 +12,5 @@ router.register(r'TrocaGuarda', TrocaGuardaView)
 router.register(r'Notificacao', NotificacaoView)
 router.register(r'Escala', EscalaView)
 
+
 urlpatterns = router.urls
