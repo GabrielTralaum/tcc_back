@@ -29,6 +29,7 @@ urlpatterns = [
     path('', include('djoser.urls')),
     path('auth/', include('djoser.urls.jwt')),
     path('api/upload-foto/', views.upload_foto, name='upload_foto'),
+    path('sortear_guardas/', views.sortear_guardas, name='sortear_guardas'),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
