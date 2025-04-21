@@ -146,5 +146,19 @@ def sortear_guardas(request):
 
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+@api_view(['DELETE'])
+def apagar_guardas(request):
+    try:
+        # Apaga todos os registros relacionados, começando pelos mais dependentes
+        UsuarioGuarda.objects.all().delete()
+        Guarda.objects.all().delete()
+        Escala.objects.all().delete()
+
+        return Response({'mensagem': 'Todas as guardas foram apagadas com sucesso!'}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)  
 
 

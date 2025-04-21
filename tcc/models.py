@@ -47,7 +47,7 @@ class UsuarioCustomizado(AbstractBaseUser, PermissionsMixin):
         return str(self.numero_atirador) if self.numero_atirador is not None else self.email
 
 class Guarda(models.Model):
-    data_guarda = models.DateTimeField(auto_now_add=True) #ver/pensar ainda
+    data_guarda = models.DateTimeField(auto_now_add=False) #ver/pensar ainda
     observacoes = models.CharField(max_length=250)
     id_escala = models.ForeignKey('Escala', on_delete=models.CASCADE)
     
