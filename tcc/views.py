@@ -257,6 +257,3 @@ def executar_troca_guarda(request):
         return Response({'erro': 'Vínculo específico entre atirador e guarda não encontrado.'}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response({'erro': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-

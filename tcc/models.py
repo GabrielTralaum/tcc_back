@@ -7,6 +7,7 @@ ROLE_CHOICES = [('user', 'Usuário'),('admin', 'Administrador'),]
 SEXO_CHOICES = [('M', 'Masculino'), ('F', 'Feminino')]
 TIPO_CHOICES = [('SB', 'Subtenente'), ('A', 'Atirador'), ('S', 'Sargento'), ('C', 'Cabo')]
 TIPS_CHOICES = [('S', 'Sim'), ('N', 'Não')]
+
 class UsuarioCustomizado(AbstractBaseUser, PermissionsMixin):
     numero_atirador = models.IntegerField(unique=True, null=True, blank=True)
     foto = models.ImageField(upload_to='imagens/%Y/%m/%d/')
