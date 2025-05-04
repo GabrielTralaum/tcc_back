@@ -12,9 +12,11 @@ class GuardaSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class UsuarioGuardaSerializer(serializers.ModelSerializer):
+    nome_guerra = serializers.CharField(source='numero_atirador.nome_guerra', read_only=True)
+
     class Meta:
         model = UsuarioGuarda
-        fields = '__all__'
+        fields = ['id', 'id_guarda', 'comandante', 'nome_guerra']
 
 class TrocaSerializer(serializers.ModelSerializer):
     class Meta:

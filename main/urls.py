@@ -31,7 +31,10 @@ urlpatterns = [
     path('api/upload-foto/', views.upload_foto, name='upload_foto'),
     path('sortear_guardas/', views.sortear_guardas, name='sortear_guardas'),
     path('apagar_guardas/', views.apagar_guardas, name='apagar_guardas'),
-   
+    path('solicitar-troca/', views.solicitar_troca_guarda, name='solicitar_troca'),
+     path('aceitar-troca/', views.aceitar_troca_guarda, name='aceitar_troca'),
+    path('rejeitar-troca/', views.rejeitar_troca_guarda, name='rejeitar_troca'),
+    path('executar-troca/', views.executar_troca_guarda, name='executar_troca'),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

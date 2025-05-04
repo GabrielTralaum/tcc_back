@@ -5,9 +5,8 @@ from .serializers import *
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-import holidays
 from datetime import datetime, timedelta
-
+from django.utils import timezone
 
 class UsuarioCustomizadoView(ModelViewSet):
     queryset = UsuarioCustomizado.objects.all()
@@ -54,7 +53,6 @@ class EscalaView(ModelViewSet):
 @api_view(['POST'])
 def sortear_guardas(request):
     try:
-        # Pergunta a ordem desejada
         ordem = request.data.get('ordem', 'crescente')
         data_inicio_str = request.data.get('data_inicio')
         data_fim_str = request.data.get('data_fim')
@@ -64,9 +62,7 @@ def sortear_guardas(request):
 
         data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d').date()
         data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d').date()
-        feriados = holidays.Brazil(years=range(data_inicio.year, data_fim.year + 1))
 
-        # Organiza os usuários
         todos_usuarios = list(UsuarioCustomizado.objects.order_by('numero_atirador'))
         atiradores = [u for u in todos_usuarios if u.comandante == 'N']
         comandantes = [u for u in todos_usuarios if u.comandante == 'S']
@@ -79,15 +75,13 @@ def sortear_guardas(request):
             return Response({'error': 'É necessário ter ao menos um atirador e um comandante.'}, status=status.HTTP_400_BAD_REQUEST)
 
         dias_totais = (data_fim - data_inicio).days + 1
-
         index_uteis = 0
         index_fds = 0
         index_comandante = 0
 
         escala = Escala.objects.create(nome_escala=f"Escala de {data_inicio} a {data_fim}")
 
-        # Função auxiliar para pegar atiradores válidos
-        def pegar_atiradores(indice_inicial, lista, is_fds=False):
+        def pegar_atiradores(indice_inicial, lista):
             atiradores_do_dia = []
             count = 0
             indice = indice_inicial
@@ -103,15 +97,13 @@ def sortear_guardas(request):
 
         for i in range(dias_totais):
             dia = data_inicio + timedelta(days=i)
-            is_fds = dia.weekday() >= 5 or dia in feriados  # Inclui feriados na regra de final de semana
+            is_fds = dia.weekday() >= 5  # 5 = sábado, 6 = domingo
 
             guarda = Guarda.objects.create(data_guarda=dia, observacoes='', id_escala=escala)
 
             if is_fds:
-                # Final de semana ou feriado
-                atiradores_do_dia, index_fds = pegar_atiradores(index_fds, atiradores, is_fds=True)
+                atiradores_do_dia, index_fds = pegar_atiradores(index_fds, atiradores)
             else:
-                # Dias úteis
                 atiradores_do_dia, index_uteis = pegar_atiradores(index_uteis, atiradores)
 
             comandante = comandantes[index_comandante % len(comandantes)]
@@ -131,7 +123,6 @@ def sortear_guardas(request):
 @api_view(['DELETE'])
 def apagar_guardas(request):
     try:
-       
         UsuarioGuarda.objects.all().delete()
         Guarda.objects.all().delete()
         Escala.objects.all().delete()
@@ -140,6 +131,132 @@ def apagar_guardas(request):
 
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR) 
-     
+
+@api_view(['POST'])
+def solicitar_troca_guarda(request):
+    try:
+        solicitante_num = request.data.get('solicitante')
+        substituto_num = request.data.get('substituto')
+        guarda_id = request.data.get('guarda')
+        motivo = request.data.get('motivo')
+
+        # Validar se todos os dados foram enviados
+        if not all([solicitante_num, substituto_num, guarda_id]):
+            return Response({'erro': 'Dados incompletos.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Criar objeto Troca
+        troca = Troca.objects.create(motivo=motivo)
+
+        # Criar relação com atiradores
+        TrocaAtirador.objects.create(id_troca=troca, numero_atirador_id=solicitante_num, tipo='Solicitante')
+        TrocaAtirador.objects.create(id_troca=troca, numero_atirador_id=substituto_num, tipo='Substituto')
+
+        # Criar relação com guarda
+        TrocaGuarda.objects.create(id_troca=troca, id_guarda_id=guarda_id)
+
+        return Response({'mensagem': 'Solicitação registrada com sucesso.', 'id_troca': troca.id}, status=status.HTTP_201_CREATED)
+
+    except UsuarioCustomizado.DoesNotExist:
+        return Response({'erro': 'Usuário não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+    except Guarda.DoesNotExist:
+        return Response({'erro': 'Guarda não encontrada.'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'erro': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+@api_view(['POST'])
+def aceitar_troca_guarda(request):
+    try:
+        id_troca = request.data.get('id_troca')
+
+        if not id_troca:
+            return Response({'erro': 'ID da troca não fornecido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        troca = Troca.objects.get(id=id_troca)
+
+        if troca.status != 'Pendente':
+            return Response({'erro': 'A troca já foi processada.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        troca.status = 'Aprovada'
+        troca.save()
+
+        return Response({'mensagem': 'Troca aprovada com sucesso.'}, status=status.HTTP_200_OK)
+
+    except Troca.DoesNotExist:
+        return Response({'erro': 'Troca não encontrada.'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'erro': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+@api_view(['POST'])
+def rejeitar_troca_guarda(request):
+    try:
+        id_troca = request.data.get('id_troca')
+
+        if not id_troca:
+            return Response({'erro': 'ID da troca não fornecido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        troca = Troca.objects.get(id=id_troca)
+
+        if troca.status != 'Pendente':
+            return Response({'erro': 'A troca já foi processada.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        troca.status = 'Rejeitada'
+        troca.save()
+
+        return Response({'mensagem': 'Troca rejeitada com sucesso.'}, status=status.HTTP_200_OK)
+
+    except Troca.DoesNotExist:
+        return Response({'erro': 'Troca não encontrada.'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'erro': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['PUT'])
+def executar_troca_guarda(request):
+    try:
+        id_troca = request.data.get('id_troca')
+
+        if not id_troca:
+            return Response({'erro': 'ID da troca não fornecido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        troca = Troca.objects.get(id=id_troca)
+
+        if troca.status != 'Aprovada':
+            return Response({'erro': 'A troca não está aprovada.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Buscar solicitante e substituto
+        solicitante = TrocaAtirador.objects.get(id_troca=troca, tipo='Solicitante').numero_atirador
+        substituto = TrocaAtirador.objects.get(id_troca=troca, tipo='Substituto').numero_atirador
+
+        # Buscar a guarda principal da troca
+        guarda_solicitante = TrocaGuarda.objects.get(id_troca=troca).id_guarda
+
+        # Encontrar qual guarda o substituto está
+        substituto_ug = UsuarioGuarda.objects.filter(numero_atirador=substituto).first()
+        if not substituto_ug:
+            return Response({'erro': 'Substituto não está vinculado a nenhuma guarda.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        guarda_substituto = substituto_ug.id_guarda
+
+        # Pega os vínculos específicos dos dois atiradores com suas respectivas guardas
+        ug_solicitante = UsuarioGuarda.objects.get(numero_atirador=solicitante, id_guarda=guarda_solicitante)
+        ug_substituto = UsuarioGuarda.objects.get(numero_atirador=substituto, id_guarda=guarda_substituto)
+
+        # Realizar a troca
+        ug_solicitante.numero_atirador, ug_substituto.numero_atirador = substituto, solicitante
+        ug_solicitante.save()
+        ug_substituto.save()
+
+        return Response({'mensagem': 'Troca realizada com sucesso.'}, status=status.HTTP_200_OK)
+
+    except Troca.DoesNotExist:
+        return Response({'erro': 'Troca não encontrada.'}, status=status.HTTP_404_NOT_FOUND)
+    except TrocaAtirador.DoesNotExist:
+        return Response({'erro': 'Dados da troca incompletos.'}, status=status.HTTP_400_BAD_REQUEST)
+    except TrocaGuarda.DoesNotExist:
+        return Response({'erro': 'Guarda da troca não encontrada.'}, status=status.HTTP_404_NOT_FOUND)
+    except UsuarioGuarda.DoesNotExist:
+        return Response({'erro': 'Vínculo específico entre atirador e guarda não encontrado.'}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({'erro': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 

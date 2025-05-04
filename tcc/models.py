@@ -1,6 +1,4 @@
-from django.db import models 
-
-# Create your models here.
+from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from .gerenciador import Gerenciador
@@ -59,10 +57,6 @@ class UsuarioGuarda(models.Model):
     numero_atirador = models.ForeignKey(UsuarioCustomizado, on_delete=models.CASCADE, to_field='numero_atirador', null=False)
     comandante = models.BooleanField(default=False)
 
-
-    def __str__(self):
-       return f"{self.numero_atirador} na Guarda {self.id_guarda}"
-
 class Troca(models.Model):
     STATUS_CHOICES = [('Pendente', 'Pendente'), ('Aprovada', 'Aprovada'), ('Rejeitada', 'Rejeitada')]
     
@@ -70,10 +64,10 @@ class Troca(models.Model):
     data_solicitada = models.DateTimeField(auto_now_add=True)
     motivo = models.TextField(null=True, blank=True)
     ultima_modificacao = models.DateTimeField(auto_now=True)
-    
+
     def __str__(self):
         return f"Troca {self.id} - {self.status}"
-
+    
 class TrocaAtirador(models.Model):
     TIPO_CHOICES = [('Solicitante', 'Solicitante'), ('Substituto', 'Substituto')]
     
@@ -87,7 +81,7 @@ class TrocaAtirador(models.Model):
 class TrocaGuarda(models.Model):
     id_guarda = models.ForeignKey(Guarda, on_delete=models.CASCADE)
     id_troca = models.ForeignKey(Troca, on_delete=models.CASCADE)
-    
+
     def __str__(self):
         return f"Troca {self.id_troca} - Guarda {self.id_guarda}"
     
@@ -108,6 +102,3 @@ class Escala(models.Model):
 
     def __str__(self):
         return self.nome_escala
-
-    
-
