@@ -82,7 +82,8 @@ class TrocaAtirador(models.Model):
 class TrocaGuarda(models.Model):
     id_guarda = models.ForeignKey(Guarda, on_delete=models.CASCADE)
     id_troca = models.ForeignKey(Troca, on_delete=models.CASCADE)
-
+    tipo = models.CharField(max_length=12, choices=TIPO_CHOICES)
+    
     def __str__(self):
         return f"Troca {self.id_troca} - Guarda {self.id_guarda}"
     

@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from datetime import datetime, timedelta
 from django.utils import timezone
+from datetime import date
 
 class UsuarioCustomizadoView(ModelViewSet):
     queryset = UsuarioCustomizado.objects.all()
@@ -137,22 +138,57 @@ def solicitar_troca_guarda(request):
     try:
         solicitante_num = request.data.get('solicitante')
         substituto_num = request.data.get('substituto')
-        guarda_id = request.data.get('guarda')
+        guarda_solicitante_id = request.data.get('guarda_solicitante')
+        guarda_substituto_id = request.data.get('guarda_substituto')
         motivo = request.data.get('motivo')
 
-        # Validar se todos os dados foram enviados
-        if not all([solicitante_num, substituto_num, guarda_id]):
+        from datetime import date
+
+        # Obter o usuário solicitante e substituto
+        solicitante = UsuarioCustomizado.objects.get(numero_atirador=solicitante_num)
+        substituto = UsuarioCustomizado.objects.get(numero_atirador=substituto_num)
+
+        # Verificar se o solicitante e o substituto são do mesmo tipo (atirador ou comandante)
+        if (solicitante.comandante != substituto.comandante):
+            return Response({'erro': 'Troca permitida apenas entre atiradores ou entre comandantes.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Obter a guarda solicitante
+        guarda_solicitante = Guarda.objects.get(id=guarda_solicitante_id)
+        data_guarda_solicitante = guarda_solicitante.data_guarda.date()  # Utilizando apenas a data, sem a hora
+
+        # Verificar se o solicitante já está escalado para outra guarda no mesmo dia
+        vinculo_existente = UsuarioGuarda.objects.filter(
+            numero_atirador_id=solicitante_num,
+            id_guarda__data_guarda__date=data_guarda_solicitante  # Filtra pela data sem considerar a hora
+        ).exists()
+
+        if vinculo_existente:
+            return Response({'erro': 'O solicitante já está escalado para outra guarda neste dia.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Verificar se o substituto já está escalado para outra guarda no mesmo dia
+        guarda_substituto = Guarda.objects.get(id=guarda_substituto_id)
+        data_guarda_substituto = guarda_substituto.data_guarda.date()  # Utilizando apenas a data, sem a hora
+
+        vinculo_substituto_existente = UsuarioGuarda.objects.filter(
+            numero_atirador_id=substituto_num,
+            id_guarda__data_guarda__date=data_guarda_substituto  # Filtra pela data sem considerar a hora
+        ).exists()
+
+        if vinculo_substituto_existente:
+            return Response({'erro': 'O substituto já está escalado para outra guarda neste dia.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not all([solicitante_num, substituto_num, guarda_solicitante_id, guarda_substituto_id]):
             return Response({'erro': 'Dados incompletos.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Criar objeto Troca
         troca = Troca.objects.create(motivo=motivo)
 
-        # Criar relação com atiradores
+        # Relaciona os atiradores à troca
         TrocaAtirador.objects.create(id_troca=troca, numero_atirador_id=solicitante_num, tipo='Solicitante')
         TrocaAtirador.objects.create(id_troca=troca, numero_atirador_id=substituto_num, tipo='Substituto')
 
-        # Criar relação com guarda
-        TrocaGuarda.objects.create(id_troca=troca, id_guarda_id=guarda_id)
+        # Relaciona as guardas à troca, especificando quem é quem
+        TrocaGuarda.objects.create(id_troca=troca, id_guarda_id=guarda_solicitante_id, tipo='Solicitante')
+        TrocaGuarda.objects.create(id_troca=troca, id_guarda_id=guarda_substituto_id, tipo='Substituto')
 
         return Response({'mensagem': 'Solicitação registrada com sucesso.', 'id_troca': troca.id}, status=status.HTTP_201_CREATED)
 
@@ -226,15 +262,9 @@ def executar_troca_guarda(request):
         solicitante = TrocaAtirador.objects.get(id_troca=troca, tipo='Solicitante').numero_atirador
         substituto = TrocaAtirador.objects.get(id_troca=troca, tipo='Substituto').numero_atirador
 
-        # Buscar a guarda principal da troca
-        guarda_solicitante = TrocaGuarda.objects.get(id_troca=troca).id_guarda
-
-        # Encontrar qual guarda o substituto está
-        substituto_ug = UsuarioGuarda.objects.filter(numero_atirador=substituto).first()
-        if not substituto_ug:
-            return Response({'erro': 'Substituto não está vinculado a nenhuma guarda.'}, status=status.HTTP_404_NOT_FOUND)
-        
-        guarda_substituto = substituto_ug.id_guarda
+        # Buscar as guardas diretamente pela nova estrutura
+        guarda_solicitante = TrocaGuarda.objects.get(id_troca=troca, tipo='Solicitante').id_guarda
+        guarda_substituto = TrocaGuarda.objects.get(id_troca=troca, tipo='Substituto').id_guarda
 
         # Pega os vínculos específicos dos dois atiradores com suas respectivas guardas
         ug_solicitante = UsuarioGuarda.objects.get(numero_atirador=solicitante, id_guarda=guarda_solicitante)
